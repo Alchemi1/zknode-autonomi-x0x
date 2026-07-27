@@ -142,7 +142,7 @@ storage-proved-rs                 zymkey HSM
   │                                  │
   ├─ computes Merkle root ──────────►│
   │                                  ├─ signs(merkle_root + node_addr + serial)
-  │◄───────── attestation ──────────┤
+  │◄───────── attestation ───────────┤
   │                                  │
   └─ publishes attestation ──► Autonomi network
 ```
