@@ -48,6 +48,22 @@ All P2P traffic is anonymized through the mixnet. External peers see only the mi
 | [P4P Mesh](docs/P4P_MESH.md) | Multi-transport mesh architecture |
 | [Verification](docs/VERIFICATION.md) | Post-deploy verification steps |
 | [SKILL.md](SKILL.md) | Agent-facing installation skill |
+| [Hardware Root of Trust](docs/HARDWARE_ROOT_OF_TRUST.md) | SCM4/SEN400 HSM, secure boot, key management, attestation |
+| [Mixnet Proxy Debug](docs/MIXNET_PROXY_DEBUG.md) | SOCKS5 bridge troubleshooting and Sphinx geometry fix |
+
+### Hardware Root of Trust
+
+All cryptographic layers anchor to the Zymbit HSM on the SCM4/SEN400 zk-edge node:
+
+| Hardware Layer | What It Secures |
+|----------------|-----------------|
+| **Zymbit HSM** | ML-DSA-65 machine key (x0x), Ed25519 mixnet node keys, BIP32 wallet seed, LUKS keys — generated/stored inside HSM, never exposed to CPU |
+| **Bootware** | Verified boot chain; tamper detection erases all derived keys |
+| **LUKS + zymkey** | Chunk DB (1-4TB) AES-256 encrypted, key locked to HSM, bound to Device Unique ID |
+| **HSM attestation** | Storage proofs signed by HSM — binds Merkle root, node address, device serial |
+| **FPGA** (SEN400) | Lattice iCE40 accelerates Sphinx unwrap to <5ms latency |
+
+Full details: [`docs/HARDWARE_ROOT_OF_TRUST.md`](docs/HARDWARE_ROOT_OF_TRUST.md)
 
 ## License
 
