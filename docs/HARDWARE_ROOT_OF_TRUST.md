@@ -21,15 +21,15 @@ The ZKNetwork zk-edge node anchors every layer of the stack to tamper-resistant 
 
 ```
                     ┌──────────────────────────────────────┐
-                    │   Zymbit HSM (I2C co-processor)       │
-                    │  ┌──────────────────────────────────┐ │
-                    │  │ Immutable Root Key (burned in)   │ │
-                    │  │   ├── Device Unique ID (32B)     │ │
-                    │  │   ├── Firmware Signing Key       │ │
-                    │  │   └── Production Lock Seal       │ │
-                    │  └──────────────────────────────────┘ │
-                    │                                       │
-                    │  Derived Keys (generated, locked):    │
+                    │   Zymbit HSM (I2C co-processor)      │
+                    │  ┌─────────────────────────────────┐ │
+                    │  │ Immutable Root Key (burned in)  │ │
+                    │  │   ├── Device Unique ID (32B)    │ │
+                    │  │   ├── Firmware Signing Key      │ │
+                    │  │   └── Production Lock Seal      │ │
+                    │  └─────────────────────────────────┘ │
+                    │                                      │
+                    │  Derived Keys (generated, locked):   │
                     │  ├── BIP32 Master Seed (Autonomi)    │
                     │  ├── LUKS Key (chunk DB)             │
                     │  ├── Mixnet Node Identity (Ed25519)  │
@@ -40,10 +40,10 @@ The ZKNetwork zk-edge node anchors every layer of the stack to tamper-resistant 
                     ┌──────────────────▼───────────────────┐
                     │   CM4 / SEN400 SoC                   │
                     │   Quad Cortex-A72 @ 1.5GHz           │
-                    │                                       │
+                    │                                      │
                     │   ┌─────────────────────────────┐    │
                     │   │ RISC-V zkVM (SP1)           │    │
-                    │   │ Storage Proof Guest          │    │
+                    │   │ Storage Proof Guest         │    │
                     │   └─────────────────────────────┘    │
                     └──────────────────────────────────────┘
 ```
