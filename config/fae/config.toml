@@ -1,0 +1,29 @@
+[server]
+listen = "127.0.0.1:11780"
+metrics_listen = "127.0.0.1:11790"
+
+[agent]
+name = "zknode-fae"
+description = "zknode P4P mesh AI companion"
+
+[x0x]
+api_url = "http://127.0.0.1:11700"
+auto_connect = true
+
+[memory]
+backend = "sqlite"
+path = "/var/lib/fae/memory"
+vector_dim = 384
+
+[skills]
+directory = "/var/lib/fae/skills"
+auto_load = true
+
+[llm]
+provider = "ollama"
+endpoint = "http://llm-wiki:11434"
+model = "phi-3-mini-q4"
+
+[wiki]
+endpoint = "http://llm-wiki:18765"
+default_wiki = "p2p-infrastructure"

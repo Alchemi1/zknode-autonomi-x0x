@@ -1,0 +1,48 @@
+# x0xd configuration for mixnet-routed operation
+# This config routes all P2P traffic through the Katzenpost mixnet
+# via the SOCKS5 proxy at mixnet-proxy:1080
+
+bind_address = "0.0.0.0:5483"
+api_address = "127.0.0.1:11700"
+log_level = "info"
+heartbeat_interval_secs = 300
+identity_ttl_secs = 900
+rendezvous_enabled = true
+network_id = "x0x.prod"
+
+[bootstrap]
+nodes = [
+  "nyc.x0x.md:5483",
+  "sfo.x0x.md:5483",
+  "helsinki.x0x.md:5483",
+  "nuremberg.x0x.md:5483",
+  "singapore.x0x.md:5483",
+  "sydney.x0x.md:5483",
+]
+
+# All traffic through mixnet SOCKS5 proxy
+[transport]
+socks5_proxy = "socks5://mixnet-proxy:1080"
+
+# Fallback direct QUIC when mixnet is unavailable
+[transport.direct]
+enable_mdns = true
+listen_port = 5483
+
+[identity]
+machine_key_path = "/var/lib/x0x/machine.key"
+agent_key_path = "/var/lib/x0x/agent.key"
+
+[trust]
+default_level = "unknown"
+auto_accept_contacts = false
+
+[storage]
+root = "/var/lib/x0x/data"
+
+[dm]
+inbox_path = "/var/lib/x0x/dms"
+
+# Named instance for P4P mesh
+[instance]
+name = "zknode-p4p"

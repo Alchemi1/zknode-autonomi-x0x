@@ -1,0 +1,62 @@
+ARG TARGETARCH=arm64
+ARG BUILDER_ARCH=amd64
+ARG X0X_VERSION=0.34.3
+
+FROM --platform=linux/${BUILDER_ARCH} rust:slim-bookworm AS builder
+
+ARG TARGETARCH
+ARG X0X_VERSION
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential pkg-config libssl-dev protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN case "${TARGETARCH}" in \
+    arm64) \
+        dpkg --add-architecture arm64 && \
+        apt-get update && apt-get install -y --no-install-recommends \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+            libssl-dev:arm64 && \
+        rm -rf /var/lib/apt/lists/* && \
+        rustup target add aarch64-unknown-linux-gnu && \
+        mkdir -p /root/.cargo && \
+        printf '[target.aarch64-unknown-linux-gnu]\nlinker = "aarch64-linux-gnu-gcc"\n' \
+            > /root/.cargo/config.toml && \
+        export CARGO_TARGET_DIR=/build && \
+        export CARGO_BUILD_TARGET=aarch64-unknown-linux-gnu && \
+        export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc; \
+        ;; \
+    amd64) \
+        export CARGO_BUILD_TARGET=x86_64-unknown-linux-gnu; \
+        ;; \
+    esac; \
+    git clone --branch v${X0X_VERSION} --depth 1 \
+        https://github.com/saorsa-labs/x0x.git /src/x0x && \
+    cd /src/x0x && \
+    cargo build --release --target ${CARGO_BUILD_TARGET} --bin x0xd --bin x0x && \
+    mkdir -p /out && \
+    cp target/${CARGO_BUILD_TARGET}/release/x0xd /out/ && \
+    cp target/${CARGO_BUILD_TARGET}/release/x0x /out/
+
+FROM --platform=linux/${TARGETARCH} debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates libssl3 curl jq \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /out/x0xd /usr/local/bin/
+COPY --from=builder /out/x0x /usr/local/bin/
+
+RUN mkdir -p /var/lib/x0x
+
+COPY config/x0x/config.toml /etc/x0x/config.toml
+
+VOLUME ["/var/lib/x0x"]
+
+EXPOSE 11700 5483
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD x0x health --api-port 11700 || exit 1
+
+ENTRYPOINT ["x0xd"]
+CMD ["--config", "/etc/x0x/config.toml", "--data-dir", "/var/lib/x0x", "--api-port", "11700"]
