@@ -1,0 +1,25 @@
+# Data (generated on deploy)
+data/
+
+# Environment
+.env
+
+# Compiled binaries
+*.tar.gz
+*.tar
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Katzenpost source (large)
+katzenpost/
+
+# Build cache
+target/

@@ -1,60 +1,62 @@
 # ZKNetwork P4P Mesh Node — X0X + FAE + Autonomi Integration
 
+> **Hardware Root of Trust**: All layers anchor to the Zymbit HSM on the SCM4/SEN400 zk-edge node. See [`docs/HARDWARE_ROOT_OF_TRUST.md`](docs/HARDWARE_ROOT_OF_TRUST.md) for the full hardware security model — secure boot, HSM-backed keys, LUKS storage encryption, FPGA-accelerated Sphinx, and hardware attestation chain.
+
 ## Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                          zknode P4P Mesh Node                           │
-│                     Post-Quantum Privacy Mesh + Agent Mesh              │
-│                                                                         │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                    Agent Layer (X0X + FAE)                        │  │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐ │  │
-│  │  │ FAE          │  │ X0X Agent    │  │ zknode-dashboard         │ │  │
-│  │  │ (AI companion) │  │ (agent_123)  │  │ (Web UI + MCP)         │ │  │
-│  │  │ skills: wiki  │  │ identity:   │  │ X0X tab · FAE tab        │ │  │
-│  │  │ storage, chat │  │ ML-DSA-65   │  │ Mesh tab · Ant tab       │ │  │
-│  │  └──────┬───────┘  └──────┬───────┘  └───────────┬──────────────┘ │  │
-│  └─────────┼─────────────────┼──────────────────────┼────────────────┘  │
-│            │                 │                      │                   │
-│  ┌─────────▼─────────────────▼──────────────────────▼────────────────┐  │
-│  │                      x0xd (Daemon)                                │  │
-│  │  ┌───────────┐ ┌───────────┐ ┌──────────┐ ┌─────────────────────┐ │  │
-│  │  │ Gossip    │ │ CRDT KV   │ │ Identity │ │ REST API · WS · SSE │ │  │
-│  │  │ Pub/Sub   │ │+ TaskLists│ │ Trust    │ │ :11700              │ │  │
-│  │  └─────┬─────┘ └─────┬─────┘ └────┬─────┘ └─────────────────────┘ │  │
-│  └────────┼─────────────┼────────────┼───────────────────────────────┘  │
-│           │             │            │                                  │
-│  ┌────────▼─────────────▼────────────▼───────────────────────────────┐  │
-│  │                   Transport Layer                                 │  │
-│  │  ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────┐ │  │
-│  │  │ QUIC P2P        │  │ Katzenpost      │  │ Reticulum          │ │  │
-│  │  │ (ant-quic)      │  │ Mixnet          │  │ (LoRa/Packet/WiFi) │ │  │
-│  │  │ NAT traversal   │  │ 3-hop Sphinx    │  │ IBSS mesh          │ │  │
-│  │  │ direct P2P      │  │ metadata-hiding │  │ offline mesh       │ │  │
-│  │  └────────┬────────┘  └────────┬────────┘  └──────────┬─────────┘ │  │
-│  └───────────┼────────────────────┼──────────────────────┼───────────┘  │
-│              │                    │                      │              │
-│  ┌───────────▼────────────────────▼──────────────────────▼───────────┐  │
-│  │                     Storage Layer (Autonomi)                      │  │
-│  │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐ │  │
-│  │  │ ant-node         │  │ antd (daemon)    │  │ storage-proved-rs│ │  │
-│  │  │ P2P storage node │  │ CLI + REST :12000│  │ Winterfell STARKs│ │  │
-│  │  │ chunks · scratch │  │ SDK bridge       │  │ Merkle proofs    │ │  │
-│  │  └────────┬─────────┘  └────────┬─────────┘  └─────────┬────────┘ │  │
-│  │           │                     │                      │          │  │
-│  │           └─────────────────────┴──────────────────────┘          │  │
-│  │                           LMDB chunk store                        │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                                         │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │               Security & Hardware Layer                           │  │
-│  │  ┌──────────┐  ┌────────────┐  ┌─────────┐  ┌─────────────────┐   │  │
-│  │  │ SCM4/CM4 │  │ ZSCM HSM   │  │ USB SSD │  │ LUKS + zymkey   │   │  │
-│  │  │ 8GB RAM  │  │ (I2C)      │  │ 1-4TB   │  │ attestation     │   │  │
-│  │  └──────────┘  └────────────┘  └─────────┘  └─────────────────┘   │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────┘
+│                          zknode P4P Mesh Node                            │
+│                     Post-Quantum Privacy Mesh + Agent Mesh                │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │                    Agent Layer (X0X + FAE)                          │  │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────────┐ │  │
+│  │  │ FAE          │  │ X0X Agent    │  │ zknode-dashboard          │ │  │
+│  │  │ (AI companion) │  │ (agent_123)  │  │ (Web UI + MCP)            │ │  │
+│  │  │ skills: wiki  │  │ identity:   │  │ X0X tab · FAE tab          │ │  │
+│  │  │ storage, chat │  │ ML-DSA-65   │  │ Mesh tab · Ant tab        │ │  │
+│  │  └──────┬───────┘  └──────┬───────┘  └───────────┬───────────────┘ │  │
+│  └─────────┼─────────────────┼───────────────────────┼─────────────────┘  │
+│            │                 │                       │                    │
+│  ┌─────────▼─────────────────▼───────────────────────▼─────────────────┐  │
+│  │                      x0xd (Daemon)                                   │  │
+│  │  ┌───────────┐ ┌───────────┐ ┌──────────┐ ┌──────────────────────┐  │  │
+│  │  │ Gossip    │ │ CRDT KV   │ │ Identity │ │ REST API · WS · SSE  │  │  │
+│  │  │ Pub/Sub   │ │ + TaskLists│ │ Trust    │ │ :11700               │  │  │
+│  │  └─────┬─────┘ └─────┬─────┘ └────┬─────┘ └──────────────────────┘  │  │
+│  └────────┼──────────────┼────────────┼────────────────────────────────┘  │
+│           │              │            │                                   │
+│  ┌────────▼──────────────▼────────────▼────────────────────────────────┐  │
+│  │                   Transport Layer                                     │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────────┐ │  │
+│  │  │ QUIC P2P        │  │ Katzenpost      │  │ Reticulum            │ │  │
+│  │  │ (ant-quic)      │  │ Mixnet          │  │ (LoRa/Packet/WiFi)   │ │  │
+│  │  │ NAT traversal   │  │ 3-hop Sphinx    │  │ IBSS mesh            │ │  │
+│  │  │ direct P2P      │  │ metadata-hiding │  │ offline mesh         │ │  │
+│  │  └────────┬────────┘  └────────┬────────┘  └──────────┬───────────┘ │  │
+│  └───────────┼────────────────────┼──────────────────────┼──────────────┘  │
+│              │                    │                      │                │
+│  ┌───────────▼────────────────────▼──────────────────────▼──────────────┐  │
+│  │                     Storage Layer (Autonomi)                          │  │
+│  │  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────────┐  │  │
+│  │  │ ant-node         │  │ antd (daemon)     │  │ storage-proved-rs  │  │  │
+│  │  │ P2P storage node │  │ CLI + REST :12000 │  │ Winterfell STARKs  │  │  │
+│  │  │ chunks · scratch │  │ SDK bridge        │  │ Merkle proofs      │  │  │
+│  │  └────────┬─────────┘  └────────┬─────────┘  └─────────┬──────────┘  │  │
+│  │           │                     │                      │             │  │
+│  │           └─────────────────────┴──────────────────────┘             │  │
+│  │                           LMDB chunk store                           │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│                                                                          │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │               Security & Hardware Layer                               │  │
+│  │  ┌──────────┐  ┌────────────┐  ┌─────────┐  ┌───────────────────┐   │  │
+│  │  │ SCM4/CM4 │  │ ZSCM HSM   │  │ USB SSD │  │ LUKS + zymkey     │   │  │
+│  │  │ 8GB RAM  │  │ (I2C)      │  │ 1-4TB   │  │ attestation       │   │  │
+│  │  └──────────┘  └────────────┘  └─────────┘  └───────────────────┘   │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Component Stack
@@ -264,4 +266,15 @@ fae ask "what is on the mesh?"     # Wiki query
 
 # Phase 4 verification
 ./scripts/test-mesh-roundtrip.sh   # Full roundtrip
+```
+
+## Hardware Root of Trust
+
+All components anchor to the Zymbit HSM on the SCM4/SEN400 zk-edge node. See [`docs/HARDWARE_ROOT_OF_TRUST.md`](docs/HARDWARE_ROOT_OF_TRUST.md) for the full hardware security model:
+
+- **Secure boot**: Bootware verifies every boot artifact. Tamper → key erasure.
+- **HSM-backed keys**: Mixnet node keys, X0X ML-DSA-65 machine key, BIP32 wallet seed, LUKS encryption keys — all generated and stored inside the HSM. Private keys never touch CPU memory.
+- **Storage encryption**: Chunk DB on LUKS-encrypted USB pool. Key locked to HSM, bound to Device Unique ID.
+- **Hardware attestation**: Storage proofs signed by HSM, binding Merkle root to specific hardware.
+- **FPGA acceleration** (SEN400): Lattice iCE40 for Sphinx unwrap (<5ms latency) and ML-KEM-768 decapsulation.
 ```
